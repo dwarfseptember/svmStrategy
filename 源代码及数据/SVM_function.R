@@ -6,19 +6,28 @@ library("quantmod")
 library("zoo")
 ## 读文件，确定自变量和因变量
 data_sample <- read.zoo("HS300_5.csv",sep=",",header=T,format = "%Y-%m-%d")
-#dataTrain <- read.csv("./data/HS300_2.csv")
 data_sample <- na.omit(data_sample)
-#ret <-Delt(data_sample$close)
-#write.csv(data_sample,"./data/HS300_5.csv")
-#View(data_sample)
-x <- data_sample[,-c(4:21)]
-y <- data_sample[,20]
-fit <- lm(ret~open+close+high+low+volume+mv10+mv20+vol10+vol20+rsi5+rsi14+macd.macd1+signal.macd1+macd.macd2+signal.macd2+dn+mavg+up+pctB,data = data_sample)
+
+View(data_sample)
+
+
+fit <- lm(ret~open+close+high+low+volume+mv10+mv20+vol10+vol20+rsi5+rsi14+macd.macd1+signal.macd1+macd.macd2+signal.macd2+dn+mavg+up+pctB+ret_cur+ret_lag1+ret_lag2,data = data_sample)
 summary(fit)
 
 
 
+
+#使用显著的变量作为X
+x <- data_sample[,c(1,3,19,23)]
 View(x)
+y <- data_sample[,20]
+View(y)
+
+#使用所有变量作为X
+x <- data_sample[,-c(20,21)]
+View(x)
+y <- data_sample[,20]
+View(y)
 
 
 insams<- "2005-01-01"
@@ -46,8 +55,8 @@ dimnames(accuracy) <- list(type,kernel)
 accuracy
 
 
-## 由以上结果可知，使用SVM进行分类，type="nu-classification",kernel = "radial"的模型最优。
-model1 <- svm(x[inrow,],y[inrow],type="C-classification",kernel = "polynomial")
+## 由以上结果可知，使用SVM进行分类，type="C-classification",kernel = "polynomial"的模型最优。
+model1 <- svm(x[inrow,],y[inrow],type="C-classification",kernel = "radial")
 pred1 <- predict(model1,x[outrow,])
 #table(pred1,y[outrow])
 outresult_out<- confusionMatrix(pred1,y[outrow])
@@ -56,7 +65,11 @@ outresult_out
 
 
 # Performance
+
+
 signal <- ifelse( pred1==1 | pred1==2,1,ifelse(pred1==-2 ,-1,0))
+#signal <- ifelse( pred1==1 | pred1==2 | pred1==1,1,0)
+#signal <- ifelse( pred1==1 | pred1==2,1,0)
 simreturn <- data_sample$ret[outrow]
 cost <- 0
 strategy_return <- Lag(simreturn)*Lag(signal)-cost
